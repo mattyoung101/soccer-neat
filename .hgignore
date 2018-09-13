@@ -1,0 +1,3 @@
+syntax: glob
+neat-checkpoint-*
+__pycache__/
