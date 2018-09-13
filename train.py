@@ -3,14 +3,24 @@ import neat
 import os
 import pickle
 import numpy as np
+import sys
+
+PROCESSES = 4
+EVALUATIONS = 3
 
 def eval_genomes(genomes, config):
-    print("Evaluating genome")
+    #print("Evaluating genome")
     for genome_id, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        scores = [simulation.simulate(net, config) for x in range(3)]
+        scores = [simulation.simulate(net, config) for x in range(EVALUATIONS)]
         genome.fitness = np.mean(scores)
-    print("Done evaluating")
+    #print("Done evaluating")
+
+# Based on https://github.com/CodeReclaimers/neat-python/blob/master/examples/xor/evolve-feedforward-parallel.py
+def eval_genome(genome, config):
+    net = neat.nn.FeedForwardNetwork.create(genome, config)
+    scores = [simulation.simulate(net, config) for x in range(EVALUATIONS)]
+    return np.mean(scores)
 
 if __name__ == "__main__":
     print("Initialising...")
@@ -24,12 +34,14 @@ if __name__ == "__main__":
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(10))
+    pe = neat.ParallelEvaluator(4, eval_genome)
 
     print("Training started!")
     try:
-        winner = p.run(eval_genomes, 30)
+        winner = p.run(pe.evaluate, 50)
     except KeyboardInterrupt:
         print("Training aborted!")
+        sys.exit(0)
         # TODO save best net here 
 
     print("Training completed. Dumping winner.")

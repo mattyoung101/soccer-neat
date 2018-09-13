@@ -32,6 +32,7 @@ reset_sim = False # if we need to reset on the next loop
 fitness = 0
 total_steps = 0
 MAX_STEPS = 750
+total_steps_touching_ball = 0
 
 def create_robot(position):
     global space
@@ -155,7 +156,7 @@ def create_field(x, y):
     space.add(static)
 
 def reset():
-    global space, robot_touched_ball, fitness, total_steps
+    global space, robot_touched_ball, fitness, total_steps, total_steps_touching_ball
     space = pymunk.Space()
     space.gravity = (0.0, 0.0)
     space.damping = 0.6
@@ -169,24 +170,28 @@ def reset():
     robot_touched_ball = False
     fitness = 0.0
     total_steps = 0
+    total_steps_touching_ball = 0
     
     def ball_goal(arbiter, spacey, data):
-        global reset_sim, fitness
+        global reset_sim, fitness, total_steps_touching_ball
         fitness += 1000 # good robot
-        fitness -= (total_steps) / 1.5
+        fitness -= total_steps / 1.5
+        fitness += total_steps_touching_ball
         reset_sim = True
         return True
 
     def robot_wall(arbiter, spacey, data):
-        global reset_sim, fitness
+        global reset_sim, fitness, total_steps_touching_ball
         fitness -= 1000 # bad robot
-        fitness -= (total_steps) / 1.5
+        fitness -= total_steps / 1.5
+        fitness += total_steps_touching_ball
         reset_sim = True
         return True
 
     def robot_ball_enter(arbiter, spacey, data):
-        global robot_touched_ball
+        global robot_touched_ball, total_steps_touching_ball
         robot_touched_ball = True
+        total_steps_touching_ball += 1
         return True
 
     def robot_ball_leave(arbiter, spacey, data):
@@ -228,7 +233,7 @@ def simulate(net, config):
         #ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
 
         # get input from neural net here, need to calculate balldir and goaldir though
-        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir])
+        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, int(robot_touched_ball)])
         rotation = utils.clamp(rotation, -1.0, 1.0)
         speed = utils.clamp(speed, -1.0, 1.0)
         rotation *= 10 # rotation will be in degrees
@@ -242,12 +247,15 @@ def simulate(net, config):
         robot.center_of_gravity = (10.5, 10.5)
         space.step(1.0 / 60.0)
 
+        total_steps += 1
+
+        # session was ended from one of the callback listeners, so we know it's got the bonuses already
         if reset_sim:
             reset_sim = False
             return fitness
 
     # test failed to complete, still subtract total steps
-    return fitness - (total_steps) / 1.5
+    return fitness - (total_steps / 1.5) + total_steps_touching_ball
 
 # graphical simulation. this will show a single net, running in real time.
 # TODO let neural net control this instead of player
@@ -293,7 +301,6 @@ if __name__ == "__main__":
         ball_dist = utils.dist(rotated_center, ball.position) # robot -> ball dist
         goal_dist = utils.dist(ball.position, goal_pos) # ball -> goal dist
         ball_dir, goal_dir = utils.get_angles(rotated_center, ball.position, goal_pos) # inputs for neural net
-        fitness = utils.calculate_fitness(ball_dist, goal_dist, robot_touched_ball)
 
         # scale values for nn
         #ball_dir = np.interp(ball_dir, [0, 360], [0.0, 1.0])
@@ -301,7 +308,8 @@ if __name__ == "__main__":
         #ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
 
         # get input from neural net here
-        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir])
+        inputs = [ball_dir, ball_dist, goal_dir, int(robot_touched_ball)]
+        rotation, speed = net.activate(inputs)
         rotation = utils.clamp(rotation, -1.0, 1.0)
         speed = utils.clamp(speed, -1.0, 1.0)
         rotation *= 10 # rotation will be in degrees
@@ -325,8 +333,10 @@ if __name__ == "__main__":
         total_steps += 1
 
         # debug draw
-        debug = font.render(f"Fitness: {round(fitness)} Total steps: {total_steps}  Balldir: {ball_dir} Goaldir: {goal_dir}", False, (0, 0, 0))
-        screen.blit(debug, (0, 0))
+        #debug = font.render(f"Fitness: {round(fitness)} Total steps: {total_steps}  Balldir: {ball_dir} Goaldir: {goal_dir}", False, (0, 0, 0))
+        #debug = font.render(f"Outputs: {int(rotation)}", False, (0, 0, 0))
+        #screen.blit(debug, (0, 0))
+        #print(rotation)
 
         pygame.display.update()
         pygame.display.set_caption("FPS: {}".format(clock.get_fps()))
