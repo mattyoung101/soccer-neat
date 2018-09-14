@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     print("Training started!")
     try:
-        winner = p.run(pe.evaluate, 500)
+        winner = p.run(pe.evaluate, 30)
     except KeyboardInterrupt:
         print("Training aborted!")
         sys.exit(0)

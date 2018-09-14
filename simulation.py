@@ -163,7 +163,7 @@ def reset():
     space.collision_bias = 0 # add realism, don't allow shapes to overlap. may cause stability issues.
     space.iterations = 28
     robot = create_robot((140 + 5, 91 + 5))
-    robot.angle = math.radians(random.randint(0, 360))
+    #robot.angle = math.radians(random.randint(0, 360))
     ball = create_ball(121.5 + 5, 91 + 5 + random.uniform(-20.0, 20.0))
     create_field(5, 5)
     goal = create_goal(5 + 25, 5 + 68.5)
@@ -233,6 +233,11 @@ def simulate(net, config):
         #ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
 
         # get input from neural net here, need to calculate balldir and goaldir though
+        # NEW INPJTS SHOULD BE: fixed ball dir, fixed ball dist, fix goal direction, fixed goal distance
+        # need to subtract curent heading from the ball dir
+        # goal dir should be robot to goal not bloody ball to goal
+        # remove int touched ball
+        # something else here?
         rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, int(robot_touched_ball)])
         rotation = utils.clamp(rotation, -1.0, 1.0)
         speed = utils.clamp(speed, -1.0, 1.0)
