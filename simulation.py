@@ -217,14 +217,16 @@ def simulate(net, config):
     global fitness, total_steps, MAX_STEPS, reset_sim
     for step in range(MAX_STEPS):
         # calculate new net inputs
-        rotated_center = Vec2d(10.5, 0)
+        rotated_center = Vec2d(10.5, 10.5)
         rotated_center.rotate(robot.angle)
         rotated_center += robot.position
-
         goal_pos = utils.avg(goal.a, goal.b)
+
         ball_dist = utils.dist(rotated_center, ball.position) # robot -> ball dist
-        goal_dist = utils.dist(ball.position, goal_pos) # ball -> goal dist
+        goal_dist = utils.dist(rotated_center, goal_pos) # ball -> goal dist
         ball_dir, goal_dir = utils.get_angles(rotated_center, ball.position, goal_pos) # inputs for neural net
+        ball_dir -= math.degrees(robot.angle)
+        goal_dir -= math.degrees(robot.angle)
         fitness = utils.calculate_fitness(ball_dist, goal_dist, robot_touched_ball)
 
         # scale values for nn
@@ -238,7 +240,7 @@ def simulate(net, config):
         # goal dir should be robot to goal not bloody ball to goal
         # remove int touched ball
         # something else here?
-        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, int(robot_touched_ball)])
+        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, goal_dist])
         rotation = utils.clamp(rotation, -1.0, 1.0)
         speed = utils.clamp(speed, -1.0, 1.0)
         rotation *= 10 # rotation will be in degrees
@@ -260,7 +262,10 @@ def simulate(net, config):
             return fitness
 
     # test failed to complete, still subtract total steps
-    return fitness - (total_steps / 1.5) + total_steps_touching_ball
+    fitness -= 1000 # bad robot
+    fitness -= total_steps / 1.5
+    fitness += total_steps_touching_ball
+    return fitness
 
 # graphical simulation. this will show a single net, running in real time.
 # TODO let neural net control this instead of player
@@ -296,25 +301,31 @@ if __name__ == "__main__":
         clock.tick(60)
         screen.fill((230, 230, 230))
 
-        # calculate inputs and fitness for NN
-        rotated_center = Vec2d(10.5, 0)
+        # calculate new net inputs
+        rotated_center = Vec2d(10.5, 10.5)
         rotated_center.rotate(robot.angle)
         rotated_center += robot.position
-        draw_options.draw_dot(2, rotated_center, (0, 255, 0))
-
         goal_pos = utils.avg(goal.a, goal.b)
+        
         ball_dist = utils.dist(rotated_center, ball.position) # robot -> ball dist
-        goal_dist = utils.dist(ball.position, goal_pos) # ball -> goal dist
+        goal_dist = utils.dist(rotated_center, goal_pos) # ball -> goal dist
         ball_dir, goal_dir = utils.get_angles(rotated_center, ball.position, goal_pos) # inputs for neural net
+        ball_dir -= math.degrees(robot.angle)
+        goal_dir -= math.degrees(robot.angle)
+        fitness = utils.calculate_fitness(ball_dist, goal_dist, robot_touched_ball)
 
         # scale values for nn
         #ball_dir = np.interp(ball_dir, [0, 360], [0.0, 1.0])
         #goal_dir = np.interp(goal_dir, [0, 360], [0.0, 1.0])
         #ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
 
-        # get input from neural net here
-        inputs = [ball_dir, ball_dist, goal_dir, int(robot_touched_ball)]
-        rotation, speed = net.activate(inputs)
+        # get input from neural net here, need to calculate balldir and goaldir though
+        # NEW INPJTS SHOULD BE: fixed ball dir, fixed ball dist, fix goal direction, fixed goal distance
+        # need to subtract curent heading from the ball dir
+        # goal dir should be robot to goal not bloody ball to goal
+        # remove int touched ball
+        # something else here?
+        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, goal_dist])
         rotation = utils.clamp(rotation, -1.0, 1.0)
         speed = utils.clamp(speed, -1.0, 1.0)
         rotation *= 10 # rotation will be in degrees
@@ -322,11 +333,13 @@ if __name__ == "__main__":
 
         robot.angle += math.radians(rotation)
         robot.velocity = (speed * math.cos(robot.angle - 1.5708), speed * math.sin(robot.angle - 1.5708))
-        
-        robot.angular_velocity = 0 # clear angular velocity
+
+        # step sim based on input
+        robot.angular_velocity = 0
         robot.center_of_gravity = (10.5, 10.5)
         space.step(1.0 / 60.0)
         space.debug_draw(draw_options)
+        draw_options.draw_dot(2, rotated_center, pygame.color.THECOLORS["green"])
 
         # check if sim is over
         if reset_sim:
