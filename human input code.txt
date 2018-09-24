@@ -1,0 +1,40 @@
+key_pressed = False
+keys = pygame.key.get_pressed()
+robot_speed = 50
+rotate_speed = math.radians(5)
+
+clock.tick_busy_loop(60)
+screen.fill((230, 230, 230))
+
+# calculate inputs and fitness for NN
+rotated_center = Vec2d(10.5, 0)
+rotated_center.rotate(robot.angle)
+rotated_center += robot.position
+draw_options.draw_dot(2, rotated_center, (0, 255, 0))
+
+goal_pos = utils.avg(goal.a, goal.b)
+ball_dist = utils.dist(rotated_center, ball.position) # robot -> ball dist
+goal_dist = utils.dist(ball.position, goal_pos) # ball -> goal dist
+balldir, goaldir = utils.get_angles(rotated_center, ball.position, goal_pos) # inputs for neural net
+fitness = utils.calculate_fitness(ball_dist, goal_dist, robot_touched_ball)
+
+# get input from neural net here
+
+# human input
+if keys[pygame.K_d]:
+    robot.angle -= rotate_speed
+    key_pressed = True
+if keys[pygame.K_a]:
+    robot.angle += rotate_speed
+    key_pressed = True
+if keys[pygame.K_w]:
+    robot.velocity = (robot_speed * math.cos(robot.angle - 1.5708), robot_speed * math.sin(robot.angle - 1.5708))
+    key_pressed = True
+if keys[pygame.K_s]:
+    robot.velocity = (-robot_speed * math.cos(robot.angle - 1.5708), -robot_speed * math.sin(robot.angle - 1.5708))
+    key_pressed = True
+
+if not key_pressed:
+    robot.velocity = (0, 0)
+robot.angular_velocity = 0 # clear angular velocity
+robot.center_of_gravity = (10.5, 10.5)

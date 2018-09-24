@@ -33,12 +33,12 @@ if __name__ == "__main__":
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(10))
+    p.add_reporter(neat.Checkpointer(15))
     pe = neat.ParallelEvaluator(4, eval_genome)
 
     print("Training started!")
     try:
-        winner = p.run(pe.evaluate, 30)
+        winner = p.run(pe.evaluate, 50)
     except KeyboardInterrupt:
         print("Training aborted!")
         sys.exit(0)
