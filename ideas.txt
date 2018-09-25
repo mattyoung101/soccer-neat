@@ -1,0 +1,2 @@
+preprogrammed positions for each generation
+inputs should be: sin(angle) and cos(angle) - this fixes circular data problem

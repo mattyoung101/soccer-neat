@@ -293,11 +293,6 @@ if __name__ == "__main__":
             elif i.type == pygame.KEYUP and i.key == pygame.K_r:
                 robot, ball, goal = reset()
 
-        key_pressed = False
-        keys = pygame.key.get_pressed()
-        robot_speed = 50
-        rotate_speed = math.radians(5)
-
         clock.tick(60)
         screen.fill((230, 230, 230))
 
@@ -306,13 +301,17 @@ if __name__ == "__main__":
         rotated_center.rotate(robot.angle)
         rotated_center += robot.position
         goal_pos = utils.avg(goal.a, goal.b)
-        
+        draw_options.draw_dot(2, rotated_center, (0, 255, 0))
+
         ball_dist = utils.dist(rotated_center, ball.position) # robot -> ball dist
         goal_dist = utils.dist(rotated_center, goal_pos) # ball -> goal dist
         ball_dir, goal_dir = utils.get_angles(rotated_center, ball.position, goal_pos) # inputs for neural net
-        ball_dir -= math.degrees(robot.angle)
-        goal_dir -= math.degrees(robot.angle)
+        ball_dir = (450 - ball_dir + math.degrees(robot.angle)) % 360
+        goal_dir = (450 - goal_dir + math.degrees(robot.angle)) % 360
         fitness = utils.calculate_fitness(ball_dist, goal_dist, robot_touched_ball)
+
+        #draw_options.draw_segment(rotated_center, rotated_center + (futureX, futureY), (255, 0, 0))
+        #draw_options.draw_segment(rotated_center, goal_pos, (255, 0, 0))
 
         # scale values for nn
         #ball_dir = np.interp(ball_dir, [0, 360], [0.0, 1.0])
@@ -325,37 +324,49 @@ if __name__ == "__main__":
         # goal dir should be robot to goal not bloody ball to goal
         # remove int touched ball
         # something else here?
-        rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, goal_dist])
-        rotation = utils.clamp(rotation, -1.0, 1.0)
-        speed = utils.clamp(speed, -1.0, 1.0)
-        rotation *= 10 # rotation will be in degrees
-        speed *= 50 # max speed = 60
+        #rotation, speed = net.activate([ball_dir, ball_dist, goal_dir, goal_dist])
+        #rotation = utils.clamp(rotation, -1.0, 1.0)
+        #speed = utils.clamp(speed, -1.0, 1.0)
+        #rotation *= 10 # rotation will be in degrees
+        #speed *= 50 # max speed = 60
 
-        robot.angle += math.radians(rotation)
-        robot.velocity = (speed * math.cos(robot.angle - 1.5708), speed * math.sin(robot.angle - 1.5708))
+        #robot.angle += math.radians(rotation)
+        #robot.velocity = (speed * math.cos(robot.angle - 1.5708), speed * math.sin(robot.angle - 1.5708))
+        key_pressed = False
+        keys = pygame.key.get_pressed()
+        robot_speed = 50
+        rotate_speed = math.radians(5)
+        if keys[pygame.K_d]:
+            robot.angle -= rotate_speed
+            key_pressed = True
+        if keys[pygame.K_a]:
+            robot.angle += rotate_speed
+            key_pressed = True
+        if keys[pygame.K_w]:
+            robot.velocity = (robot_speed * math.cos(robot.angle - 1.5708), robot_speed * math.sin(robot.angle - 1.5708))
+            key_pressed = True
+        if keys[pygame.K_s]:
+            robot.velocity = (-robot_speed * math.cos(robot.angle - 1.5708), -robot_speed * math.sin(robot.angle - 1.5708))
+            key_pressed = True
+
+        if not key_pressed:
+            robot.velocity = (0, 0)
 
         # step sim based on input
         robot.angular_velocity = 0
         robot.center_of_gravity = (10.5, 10.5)
         space.step(1.0 / 60.0)
         space.debug_draw(draw_options)
-        draw_options.draw_dot(2, rotated_center, pygame.color.THECOLORS["green"])
 
-        # check if sim is over
-        if reset_sim:
-            print("Reset sim! Final fitness was: {}".format(fitness))
-            reset_sim = False
-            robot, ball, goal = reset()
-            continue
-
-        total_steps += 1
-
-        # debug draw
-        #debug = font.render(f"Fitness: {round(fitness)} Total steps: {total_steps}  Balldir: {ball_dir} Goaldir: {goal_dir}", False, (0, 0, 0))
+        debug = font.render(f"Balldir: {round(ball_dir)} Goaldir: {round(goal_dir)}", False, (0, 0, 0))
         #debug = font.render(f"Outputs: {int(rotation)}", False, (0, 0, 0))
-        #screen.blit(debug, (0, 0))
-        #print(rotation)
+        screen.blit(debug, (0, 0))
 
+        # session was ended from one of the callback listeners, so we know it's got the bonuses already
+        if reset_sim:
+            reset_sim = False
+            print("Goodbye")
+            robot, ball, goal = reset()
         pygame.display.update()
         pygame.display.set_caption("FPS: {}".format(clock.get_fps()))
 
