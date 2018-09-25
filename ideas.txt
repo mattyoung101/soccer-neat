@@ -1,2 +1,3 @@
 preprogrammed positions for each generation
-inputs should be: sin(angle) and cos(angle) - this fixes circular data problem
+inputs should be: sin(angle) and cos(angle) - this fixes circular data problem - multply it by the ball distance
+only get input every 5th frame, to smooth motion. or take the average input of the last 5 frames.
