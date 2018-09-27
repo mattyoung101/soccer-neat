@@ -211,7 +211,7 @@ def reset():
 
     return robot, ball, goal
 
-def calculate_net_inputs():
+def calculate_net_inputs(robot, ball, goal):
     global fitness, total_steps, MAX_STEPS, reset_sim
     # calculate new net inputs
     rotated_center = Vec2d(10.5, 10.5)
@@ -226,13 +226,14 @@ def calculate_net_inputs():
     goal_dir = (450 - goal_dir + math.degrees(robot.angle)) % 360
     fitness = utils.calculate_fitness(ball_dist, goal_dist, robot_touched_ball)
 
+    ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
+    goal_dist = np.interp(goal_dist, [0, 303.6], [0.0, 1.0])
+
+    # TODO need to scale this??? :thinking_face:
     ball_i = math.cos(math.radians(ball_dir)) * ball_dist
     ball_j = math.sin(math.radians(ball_dir)) * ball_dist
     goal_i = math.cos(math.radians(goal_dir)) * goal_dist
     goal_j = math.sin(math.radians(goal_dir)) * goal_dist
-
-    ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
-    goal_dist = np.interp(goal_dist, [0, 303.6], [0.0, 1.0])
 
     return fitness, [ball_i, ball_j, goal_i, goal_j, ball_dist, goal_dist]
 
@@ -241,7 +242,7 @@ def simulate(net, config):
     robot, ball, goal = reset()
     global fitness, total_steps, MAX_STEPS, reset_sim
     for step in range(MAX_STEPS):
-        fitness, inputs = calculate_net_inputs()
+        fitness, inputs = calculate_net_inputs(robot, ball, goal)
 
         # get input from neural net here, need to calculate balldir and goaldir though
         # NEW INPJTS SHOULD BE: fixed ball dir, fixed ball dist, fix goal direction, fixed goal distance
@@ -307,7 +308,7 @@ if __name__ == "__main__":
         clock.tick(60)
         screen.fill((230, 230, 230))
 
-        fitness, inputs = calculate_net_inputs()
+        fitness, inputs = calculate_net_inputs(robot, ball, goal)
 
         rotation, speed = net.activate(inputs)
         rotation = utils.clamp(rotation, -1.0, 1.0)
@@ -344,9 +345,9 @@ if __name__ == "__main__":
         space.step(1.0 / 60.0)
         space.debug_draw(draw_options)
 
-        debug = font.render(f"Balldir: {ball_dir} Goaldir: {goal_dir} Balldist: {ball_dist}", False, (0, 0, 0))
+        #debug = font.render(f"Balldir: {ball_dir} Goaldir: {goal_dir} Balldist: {ball_dist}", False, (0, 0, 0))
         #debug = font.render(f"Outputs: {int(rotation)}", False, (0, 0, 0))
-        screen.blit(debug, (0, 0))
+        #screen.blit(debug, (0, 0))
 
         # session was ended from one of the callback listeners, so we know it's got the bonuses already
         if reset_sim:
