@@ -229,13 +229,12 @@ def calculate_net_inputs(robot, ball, goal):
     ball_dist = np.interp(ball_dist, [0, 303.6], [0.0, 1.0])
     goal_dist = np.interp(goal_dist, [0, 303.6], [0.0, 1.0])
 
-    # TODO need to scale this??? :thinking_face:
-    ball_i = math.cos(math.radians(ball_dir)) * ball_dist
-    ball_j = math.sin(math.radians(ball_dir)) * ball_dist
-    goal_i = math.cos(math.radians(goal_dir)) * goal_dist
-    goal_j = math.sin(math.radians(goal_dir)) * goal_dist
+    ball_i = math.cos(math.radians(ball_dir))
+    ball_j = math.sin(math.radians(ball_dir))
+    goal_i = math.cos(math.radians(goal_dir))
+    goal_j = math.sin(math.radians(goal_dir))
 
-    return fitness, [ball_i, ball_j, goal_i, goal_j, ball_dist, goal_dist]
+    return fitness, [ball_i, ball_j, ball_dist, goal_i, goal_j, goal_dist]
 
 # non graphical simulation, used to evaluate neural net from genetic algorithm
 def simulate(net, config):
