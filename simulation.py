@@ -164,7 +164,7 @@ def reset():
     space.iterations = 28
     robot = create_robot((140 + 5, 91 + 5))
     #robot.angle = math.radians(random.randint(0, 360))
-    ball = create_ball(121.5 + 5, 91 + 5 + random.uniform(-20.0, 20.0))
+    ball = create_ball(121.5 + 5, 91 + 5 + random.uniform(-50.0, 50.0))
     create_field(5, 5)
     goal = create_goal(5 + 25, 5 + 68.5)
     robot_touched_ball = False
@@ -344,9 +344,8 @@ if __name__ == "__main__":
         space.step(1.0 / 60.0)
         space.debug_draw(draw_options)
 
-        #debug = font.render(f"Balldir: {ball_dir} Goaldir: {goal_dir} Balldist: {ball_dist}", False, (0, 0, 0))
-        #debug = font.render(f"Outputs: {int(rotation)}", False, (0, 0, 0))
-        #screen.blit(debug, (0, 0))
+        debug = font.render(f"Current winner's gameplay:", False, (0, 0, 0))
+        screen.blit(debug, (0, 0))
 
         # session was ended from one of the callback listeners, so we know it's got the bonuses already
         if reset_sim:
